@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DiscordWatchBot.DiscordIntegration.Events.Interface;
 using DiscordWatchBot.YeeLightIntegration.Extensions;
@@ -20,7 +21,9 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 
 		private readonly Device _device;
 
-		private List<ulong> _excludedUserIds;
+		private readonly List<ulong>? _excludedUserIds;
+
+		private readonly SemaphoreSlim _lightLock;
 
 		public YeeLightEventService(
 			IConfiguration configuration,
@@ -32,11 +35,17 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 			_colorScopeProvider = colorScopeProvider;
 			_userActivityCache = userActivityCache;
 			_device = device;
+			_lightLock = new SemaphoreSlim(1);
 
-			_excludedUserIds = configuration["ExcludedUserIds"]
-				.Split(";")
-				.Select(ulong.Parse)
-				.ToList();
+			var excludedUserIdString = configuration["ExcludedUserIds"];
+
+			if (excludedUserIdString != null)
+			{
+				_excludedUserIds = excludedUserIdString
+					.Split(";")
+					.Select(ulong.Parse)
+					.ToList();
+			}
 
 			discordEventHub.OnUserJoined.Register(OnUserJoined);
 			discordEventHub.OnUserLeft.Register(OnUserLeft);
@@ -54,7 +63,7 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 
 		private async Task PerformFlash(ulong user, int red, int green, int blue)
 		{
-			if (_excludedUserIds.Contains(user))
+			if (_excludedUserIds?.Contains(user) ?? false)
 			{
 				return;
 			}
@@ -66,6 +75,8 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 
 			if (_device.IsConnected && await _device.IsTurnedOn())
 			{
+				await _lightLock.WaitAsync();
+
 				await using (await _colorScopeProvider.GetColorScope())
 				{
 					await _device.SetRGBColor(red, green, blue, 1);
@@ -74,6 +85,8 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 				}
 
 				_userActivityCache.ReportUserActivity(user);
+
+				_lightLock.Release();
 			}
 		}
 	}
