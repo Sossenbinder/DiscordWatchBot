@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DiscordWatchBot.YeeLightIntegration.DataTypes;
 using YeelightAPI;
 using YeelightAPI.Models;
@@ -10,6 +11,8 @@ namespace DiscordWatchBot.YeeLightIntegration.Extensions
 		public static async Task<bool> IsTurnedOn(this Device device)
 		{
 			var powerState = await device.GetProp(PROPERTIES.power);
+
+			Console.WriteLine($"Powerstate: { powerState }");
 
 			return powerState.Equals("on");
 		}

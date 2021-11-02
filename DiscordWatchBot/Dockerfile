@@ -3,10 +3,6 @@
 FROM mcr.microsoft.com/dotnet/core/runtime:3.1-buster-slim-arm32v7 AS base
 WORKDIR /app
 
-ENV DiscordBotToken=""
-ENV YeeLightIpAddress=""
-ENV ExcludedUserIds=""
-
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
 WORKDIR /src
 COPY ["DiscordWatchBot/DiscordWatchBot.csproj", "DiscordWatchBot/"]

@@ -21,10 +21,15 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 
 			if (!isUserKnown)
 			{
+				Console.WriteLine("User not known yet");
 				return true;
 			}
 
-			return DateTime.UtcNow > lastActivity + _timeBetweenNotifications;
+			Console.WriteLine($"User known. Current time: {DateTime.UtcNow}. Last activity: {lastActivity}. Time between: {_timeBetweenNotifications}");
+			var isEligible = DateTime.UtcNow > lastActivity + _timeBetweenNotifications;
+
+			Console.WriteLine($"User eligible? {isEligible}");
+			return isEligible;
 		}
 
 		public void ReportUserActivity(ulong userId)

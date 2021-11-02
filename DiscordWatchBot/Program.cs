@@ -38,20 +38,6 @@ namespace DiscordWatchBot
 			await integrationInitializer.Initialize();
 
 			await Task.Delay(Timeout.Infinite);
-
-			//var device = new Device("192.168.0.115");
-
-			//await Task.Delay(2000);
-
-			//var connectionStatus = await device.Connect();
-
-			//await device.Toggle();
-
-			//await Task.Delay(2000);
-
-			//await device.Toggle();
-
-			//Console.Read();
 		}
 	}
 }

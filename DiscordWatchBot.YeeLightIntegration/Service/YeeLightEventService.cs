@@ -53,11 +53,13 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 
 		private Task OnUserJoined(ulong user)
 		{
+			Console.WriteLine($"User with id {user} joined.");
 			return PerformFlash(user, 0, 255, 0);
 		}
 
 		private Task OnUserLeft(ulong user)
 		{
+			Console.WriteLine($"User with id {user} left.");
 			return PerformFlash(user, 180, 80, 80);
 		}
 
@@ -65,29 +67,51 @@ namespace DiscordWatchBot.YeeLightIntegration.Service
 		{
 			if (_excludedUserIds?.Contains(user) ?? false)
 			{
+				Console.WriteLine("Won't trigger. User is excluded");
 				return;
 			}
 
 			if (!_userActivityCache.IsUserEligibleForNotification(user))
 			{
+				Console.WriteLine("Won't trigger. User is not eligible");
 				return;
 			}
 
 			if (_device.IsConnected && await _device.IsTurnedOn())
 			{
-				await _lightLock.WaitAsync();
-
-				await using (await _colorScopeProvider.GetColorScope())
-				{
-					await _device.SetRGBColor(red, green, blue, 1);
-
-					await Task.Delay(1000);
-				}
-
-				_userActivityCache.ReportUserActivity(user);
-
-				_lightLock.Release();
+				await RunLight(user, red, green, blue);
 			}
+			else
+			{
+				Console.WriteLine("Device not connected or not turned on. Fail.");
+				if (await _device.Connect())
+				{
+					Console.WriteLine("Reconnected, retrying...");
+					await RunLight(user, red, green, blue);
+				}
+				else
+				{
+					Console.WriteLine("Couldn't reconnect");
+				}
+			}
+		}
+
+		private async Task RunLight(ulong user, int red, int green, int blue)
+		{
+			Console.WriteLine("Running");
+			await _lightLock.WaitAsync();
+
+			await using (await _colorScopeProvider.GetColorScope())
+			{
+				await _device.SetRGBColor(red, green, blue, 1);
+
+				await Task.Delay(1000);
+			}
+
+			_userActivityCache.ReportUserActivity(user);
+
+			_lightLock.Release();
+			Console.WriteLine("Unlocking");
 		}
 	}
 }
